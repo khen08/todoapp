@@ -1,23 +1,40 @@
 import { Checkbox } from "@/components/ui/checkbox";
-import { TaskItem as TaskItemType } from "@/types/task";
+import { getContrastColor } from "@/utils/colorContrast";
 
 interface TaskItemProps {
-  item: TaskItemType;
+  item: {
+    id: number;
+    name: string;
+    checked: boolean;
+  };
   onUpdate: (checked: boolean) => void;
+  backgroundColor: string;
+  textColor: string;
 }
 
-export const TaskItem: React.FC<TaskItemProps> = ({ item, onUpdate }) => {
+export const TaskItem: React.FC<TaskItemProps> = ({
+  item,
+  onUpdate,
+  backgroundColor,
+}) => {
+  const textColor = getContrastColor(backgroundColor);
+
   return (
-    <div className="flex items-center space-x-2">
+    <div className="flex items-center space-x-2" style={{ backgroundColor }}>
       <Checkbox
+        id={`task-${item.id}`}
         checked={item.checked}
         onCheckedChange={(checked) => onUpdate(checked as boolean)}
       />
-      <span
-        className={item.checked ? "line-through text-muted-foreground" : ""}
+      <label
+        htmlFor={`task-${item.id}`}
+        className={`flex-grow text-sm px-2 py-1 rounded ${
+          item.checked ? "line-through opacity-70" : ""
+        }`}
+        style={{ color: textColor }}
       >
         {item.name}
-      </span>
+      </label>
     </div>
   );
 };

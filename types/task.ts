@@ -4,14 +4,37 @@ export interface TaskItem {
   checked: boolean;
 }
 
+export interface Tag {
+  id: number;
+  name: string;
+  color: string;
+  userId: number;
+}
+
 export interface Task {
   id: number;
   title: string;
+  color: string;
   items: TaskItem[];
+  tags: Tag[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface NewTaskItem {
+  name: string;
+  checked: boolean;
+}
+
+export interface NewTag {
+  name: string;
+  color?: string;
 }
 
 export interface NewTask {
   title: string;
-  items: Omit<TaskItem, "id">[];
+  color?: string;
   authorId: number;
+  items: NewTaskItem[];
+  tags: number[];
 }

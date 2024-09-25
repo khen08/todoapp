@@ -23,6 +23,7 @@ model User {
   lockoutUntil   DateTime?
   role           Role      @default(USER)
   tasks          Task[]
+  tags           Tag[]
 
   @@map(name: "users")
 }
@@ -34,6 +35,7 @@ model Task {
   author    User       @relation(fields: [authorId], references: [id])
   authorId  Int
   items     TaskItem[]
+  tags      Tag[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 }
@@ -46,6 +48,18 @@ model TaskItem {
   taskId  Int
 
   @@map(name: "task_items")
+}
+
+model Tag {
+  id     Int    @id @default(autoincrement())
+  name   String
+  color  String @default("#ffffff")
+  user   User   @relation(fields: [userId], references: [id])
+  userId Int
+  tasks  Task[]
+
+  @@unique([name, userId])
+  @@map(name: "tags")
 }
 
 enum Role {

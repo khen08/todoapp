@@ -13,7 +13,7 @@ const TodoList = async () => {
     return (
       <SessionProvider session={session}>
         <ToastContainer
-          position="top-right"
+          position="bottom-right"
           autoClose={5000}
           hideProgressBar={false}
           newestOnTop={false}

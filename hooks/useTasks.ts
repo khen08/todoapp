@@ -65,7 +65,9 @@ export const useTasks = () => {
       }
       const updatedTask = await response.json();
       setTasks((prevTasks) =>
-        prevTasks.map((task) => (task.id === taskId ? updatedTask : task))
+        prevTasks.map((task) =>
+          task.id === taskId ? { ...task, ...updatedTask } : task
+        )
       );
       toast.success("Task updated successfully!");
       return updatedTask;

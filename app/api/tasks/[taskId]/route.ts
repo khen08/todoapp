@@ -15,6 +15,7 @@ export async function GET(
       where: { id: parseInt(taskId) },
       include: {
         items: true,
+        tags: true,
       },
     });
     return task
@@ -26,35 +27,36 @@ export async function GET(
 }
 
 export async function PATCH(
-  request: NextRequest,
+  request: Request,
   { params }: { params: { taskId: string } }
 ) {
-  const { taskId } = params;
-  const body = await request.json();
-  const { title, items } = body;
-
-  if (!title || !items) {
-    return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-  }
-
   try {
+    const taskId = parseInt(params.taskId);
+    const { title, items, tags, color } = await request.json();
+
     const updatedTask = await prisma.task.update({
-      where: { id: Number(taskId) },
+      where: { id: taskId },
       data: {
         title,
+        color,
         items: {
           deleteMany: {},
-          create: items.map((item: { name: string; checked: boolean }) => ({
+          create: items.map((item: any) => ({
             name: item.name,
             checked: item.checked,
           })),
         },
+        tags: {
+          set: tags.set,
+        },
       },
       include: {
         items: true,
+        tags: true,
       },
     });
-    return NextResponse.json(updatedTask, { status: 200 });
+
+    return NextResponse.json(updatedTask);
   } catch (error) {
     console.error("Error updating task:", error);
     return NextResponse.json({ error: "Error updating task" }, { status: 500 });

@@ -9,18 +9,21 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { title, items } = body;
+  const { title, items, tags, color } = body;
 
   if (!title || !items) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
   try {
+    const userId = Number(session.user.id);
+
     const newTask = await prisma.task.create({
       data: {
         title,
+        color,
         author: {
-          connect: { id: Number(session.user.id) },
+          connect: { id: userId },
         },
         items: {
           create: items.map((item: { name: string; checked: boolean }) => ({
@@ -28,11 +31,16 @@ export async function POST(request: NextRequest) {
             checked: item.checked,
           })),
         },
+        tags: {
+          connect: tags.map((tagId: number) => ({ id: tagId })),
+        },
       },
       include: {
         items: true,
+        tags: true,
       },
     });
+
     return NextResponse.json(newTask, { status: 201 });
   } catch (error) {
     console.error("Error creating task:", error);
