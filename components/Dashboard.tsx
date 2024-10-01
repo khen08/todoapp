@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTasks } from "@/hooks/useTasks";
-import { Task, NewTask, Tag } from "@/types/task";
+import { Task, Tag, CreateTaskInput, UpdateTaskInput } from "@/types/task";
 import { TaskCard } from "@/components/TaskCard";
 import { Header } from "@/components/Header";
 import { Sidebar } from "@/components/Sidebar";
@@ -22,9 +22,10 @@ import {
 import { TagInventoryDialog } from "@/components/TagInventoryDialog";
 import { toast } from "react-toastify";
 import { colorOptions } from "@/constants/colorOptions";
+import { Session } from "next-auth";
 
 interface DashboardProps {
-  session: any; // Replace 'any' with the actual session type
+  session: Session;
 }
 
 interface DeleteDialogState {
@@ -69,28 +70,43 @@ export function Dashboard({ session }: DashboardProps) {
     (task) =>
       task.title?.toLowerCase().includes(searchQuery.toLowerCase()) &&
       (selectedTag === "all" ||
-        (task.tags &&
-          task.tags.some((tag) => tag.id.toString() === selectedTag)))
+        task.tags.some((tag) => tag.id.toString() === selectedTag))
   );
 
   const completedTasksCount = filteredTasks.filter((task) =>
     task.items.every((item) => item.checked)
   ).length;
 
-  const handleCreateTask = async (newTask: NewTask) => {
-    await createTask(newTask);
-    setIsTaskDialogOpen(false);
-  };
-
   const handleEditTask = (task: Task) => {
     setTaskToEdit(task);
     setIsTaskDialogOpen(true);
   };
 
-  const handleUpdateTask = async (updatedTask: Task) => {
-    await updateTask(updatedTask.id, updatedTask);
-    setIsTaskDialogOpen(false);
-    setTaskToEdit(null);
+  const handleSubmit = async (task: CreateTaskInput | UpdateTaskInput) => {
+    try {
+      if ("authorId" in task) {
+        // This is a new task
+        const newTask: CreateTaskInput = {
+          title: task.title,
+          color: task.color || "#ffffff",
+          authorId: task.authorId,
+          items: task.items || [],
+          tags:
+            Array.isArray(task.tags) && task.tags.length > 0 ? task.tags : [1],
+        };
+        console.log("Submitting new task:", newTask);
+        await createTask(newTask);
+      } else {
+        // This is an update
+        if (!taskToEdit) return;
+        await updateTask(taskToEdit.id, task);
+      }
+      setIsTaskDialogOpen(false);
+      setTaskToEdit(null);
+    } catch (error) {
+      console.error("Error submitting task:", error);
+      toast.error("Failed to save task. Please try again.");
+    }
   };
 
   const handleOpenTaskDialog = () => {
@@ -125,7 +141,7 @@ export function Dashboard({ session }: DashboardProps) {
       item.id === itemId ? { ...item, checked } : item
     );
 
-    await updateTask(taskId, { ...task, items: updatedItems });
+    await updateTask(taskId, { items: updatedItems });
   };
 
   const handleLogout = () => {
@@ -161,14 +177,6 @@ export function Dashboard({ session }: DashboardProps) {
     } catch (error) {
       console.error("Error deleting tags:", error);
     }
-  };
-
-  const handleOpenAddTaskDialog = () => {
-    if (tags.length === 0) {
-      toast.error("Please create a tag in the Tag Inventory first");
-      return;
-    }
-    setIsTaskDialogOpen(true);
   };
 
   return (
@@ -228,7 +236,11 @@ export function Dashboard({ session }: DashboardProps) {
           <div className="mb-6">
             <h2 className="text-lg font-semibold mb-2">Progress Overview</h2>
             <Progress
-              value={(completedTasksCount / filteredTasks.length) * 100}
+              value={
+                filteredTasks.length > 0
+                  ? (completedTasksCount / filteredTasks.length) * 100
+                  : 0
+              }
               className="w-full"
             />
             <p className="text-sm text-muted-foreground mt-2">
@@ -265,11 +277,7 @@ export function Dashboard({ session }: DashboardProps) {
         isOpen={isTaskDialogOpen}
         onClose={() => setIsTaskDialogOpen(false)}
         taskColors={colorOptions}
-        onSubmit={(task: Task | NewTask) =>
-          "id" in task
-            ? handleUpdateTask(task as Task)
-            : handleCreateTask(task as NewTask)
-        }
+        onSubmit={handleSubmit}
         userId={session.user.id}
         tags={tags}
         task={taskToEdit}

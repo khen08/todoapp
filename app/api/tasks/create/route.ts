@@ -9,10 +9,13 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
+  console.log("Received task data:", JSON.stringify(body, null, 2));
+
   const { title, items, tags, color } = body;
 
-  if (!title || !items) {
-    return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  if (!title || !items || !Array.isArray(tags)) {
+    console.log("Missing or invalid fields:", { title, items, tags, color });
+    return NextResponse.json({ error: "Missing or invalid required fields" }, { status: 400 });
   }
 
   try {

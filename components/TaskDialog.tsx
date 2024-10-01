@@ -9,7 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { NewTask, Task, Tag } from "@/types/task";
+import {
+  NewTaskItem,
+  Task,
+  Tag,
+  CreateTaskInput,
+  UpdateTaskInput,
+} from "@/types/task";
 import { toast } from "react-toastify";
 import {
   Select,
@@ -23,7 +29,7 @@ import { colorOptions } from "@/constants/colorOptions";
 interface TaskDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (task: NewTask | Task) => void;
+  onSubmit: (task: CreateTaskInput | UpdateTaskInput) => void;
   userId: number;
   tags: Tag[];
   task?: Task | null;
@@ -58,41 +64,31 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({
     }
   }, [task, taskColors, isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
     if (selectedTags.length === 0) {
       toast.error("Please select at least one tag");
       return;
     }
-    const taskData = {
+
+    const formattedItems = items
+      .split("\n")
+      .filter((item) => item.trim() !== "")
+      .map((item) => ({
+        name: item.trim(),
+        checked: false,
+      }));
+
+    const taskData: CreateTaskInput | UpdateTaskInput = {
       title,
-      items: items
-        .split("\n")
-        .filter((item) => item.trim() !== "")
-        .map((item, index) => ({
-          id: task?.items[index]?.id || 0,
-          name: item.trim(),
-          checked: task?.items[index]?.checked || false,
-        })),
-      authorId: userId,
-      tags: {
-        set: selectedTags.map((tagId) => ({ id: tagId })),
-      },
       color: selectedColor,
+      items: formattedItems,
+      tags: selectedTags,
+      ...(task ? {} : { authorId: userId }),
     };
 
-    if (task) {
-      onSubmit({
-        ...task,
-        ...taskData,
-        tags: taskData.tags.set.map((tag) => tag.id),
-      });
-    } else {
-      onSubmit({
-        ...taskData,
-        tags: taskData.tags.set.map((tag) => tag.id),
-      } as NewTask);
-    }
+    onSubmit(taskData);
     onClose();
   };
 

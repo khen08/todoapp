@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { Task, NewTask } from "@/types/task";
+import {
+  Task,
+  NewTaskItem,
+  Tag,
+  CreateTaskInput,
+  UpdateTaskInput,
+} from "@/types/task";
 import { toast } from "react-toastify";
 
 export const useTasks = () => {
@@ -26,12 +32,17 @@ export const useTasks = () => {
     }
   };
 
-  const createTask = async (newTask: NewTask) => {
+  const createTask = async (newTask: CreateTaskInput) => {
     try {
+      const taskToSend = {
+        ...newTask,
+        tags: newTask.tags || [],
+      };
+      console.log("Sending task data:", JSON.stringify(taskToSend, null, 2));
       const response = await fetch("/api/tasks/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newTask),
+        body: JSON.stringify(taskToSend),
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -50,7 +61,7 @@ export const useTasks = () => {
     }
   };
 
-  const updateTask = async (taskId: number, updatedFields: Partial<Task>) => {
+  const updateTask = async (taskId: number, updatedFields: UpdateTaskInput) => {
     try {
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: "PATCH",

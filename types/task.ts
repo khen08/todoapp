@@ -31,10 +31,17 @@ export interface NewTag {
   color?: string;
 }
 
-export interface NewTask {
+export interface CreateTaskInput {
   title: string;
   color?: string;
   authorId: number;
   items: NewTaskItem[];
   tags: number[];
+}
+
+export interface UpdateTaskInput {
+  title?: string;
+  color?: string;
+  items?: NewTaskItem[];
+  tags?: number[];
 }

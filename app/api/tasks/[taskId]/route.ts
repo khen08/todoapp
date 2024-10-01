@@ -1,5 +1,6 @@
 import prisma from "@/prisma/db";
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 
 interface Params {
   taskId: string;
@@ -27,29 +28,42 @@ export async function GET(
 }
 
 export async function PATCH(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { taskId: string } }
 ) {
+  const session = await auth();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const taskId = parseInt(params.taskId);
     const { title, items, tags, color } = await request.json();
 
+    const updateData: any = {};
+
+    if (title !== undefined) updateData.title = title;
+    if (color !== undefined) updateData.color = color;
+
+    if (items !== undefined) {
+      updateData.items = {
+        deleteMany: {},
+        create: items.map((item: any) => ({
+          name: item.name,
+          checked: item.checked,
+        })),
+      };
+    }
+
+    if (tags !== undefined) {
+      updateData.tags = {
+        set: Array.isArray(tags) ? tags.map((tagId: number) => ({ id: tagId })) : [],
+      };
+    }
+
     const updatedTask = await prisma.task.update({
       where: { id: taskId },
-      data: {
-        title,
-        color,
-        items: {
-          deleteMany: {},
-          create: items.map((item: any) => ({
-            name: item.name,
-            checked: item.checked,
-          })),
-        },
-        tags: {
-          set: tags.set,
-        },
-      },
+      data: updateData,
       include: {
         items: true,
         tags: true,
